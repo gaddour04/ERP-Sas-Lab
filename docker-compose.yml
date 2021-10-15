@@ -1,0 +1,57 @@
+version: "3"
+services:
+  db:
+    image: mysql
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    container_name: mysql-erp
+    hostname: mysqlServer
+    environment:
+      MYSQL_ROOT_PASSWORD: 'password'
+      MYSQL_DATABASE: 'erp-application'
+    ports:
+    - 3308:3306
+    networks:
+      - backend
+
+      
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    container_name: php-my-admin-erp
+    ports:
+    - 8082:80
+    depends_on: 
+    - db
+    environment:        
+      PMA_HOST: mysql-erp
+      PMA_PORT: 3306
+    networks:
+      - backend
+  #service 3: definition of your spring-boot app 
+  erpservice:                        #it is just a name, which will be used only in this file.
+      image: erp-service               #name of the image after dockerfile executes
+      container_name: erp-app  #name of the container created from docker image
+      build:                                # précise le chemin vers notre fichier Dockerfile
+        context: .                          #docker file path (. means root directory)
+        dockerfile: Dockerfile              #docker file name
+      ports:
+        - "9494:8484"                       #docker containter port with your os port
+      restart: always
+        
+      depends_on:                           #define dependencies of this app
+        - db                                #dependency name (which is defined with this name 'db' in this file earlier)
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:mysql://mysqlServer:3306/erp-application
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: password
+      networks:
+        - backend
+        
+volumes:
+  db_data: {}
+ 
+networks:
+    backend:
+      driver: bridge
